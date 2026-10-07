@@ -1,0 +1,257 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  release:
+    types: [ published ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  quality:
+    name: Lint & Types
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        id: python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+        env:
+          UV_PYTHON: ${{ steps.python.outputs.python-path }}
+
+      - name: Lint (Ruff)
+        run: uv run ruff check .
+
+      - name: Formatting (Ruff)
+        run: uv run ruff format --check .
+
+      # The sources, the tests, the examples and the scripts, checked against Python 3.10
+      - name: Type check (mypy, strict)
+        run: uv run mypy
+
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ '3.10', '3.11', '3.12', '3.13', '3.14' ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        id: python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+        env:
+          UV_PYTHON: ${{ steps.python.outputs.python-path }}
+
+      - name: Run tests
+        if: matrix.python-version != '3.14'
+        run: uv run pytest
+
+      # Coverage is collected once; fail_under in pyproject.toml fails the run below it
+      - name: Run tests with coverage
+        if: matrix.python-version == '3.14'
+        run: uv run pytest --cov --cov-report=term-missing --cov-report=xml --cov-report=html
+
+      # The built wheel and sdist, installed in fresh environments and used without the sources
+      - name: Smoke test the package
+        run: sh scripts/smoke.sh
+        env:
+          UV_PYTHON: ${{ steps.python.outputs.python-path }}
+
+      - name: Upload coverage report
+        if: matrix.python-version == '3.14'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
+
+      # Needs the repository enabled on codecov.io; never fails the build
+      - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.14'
+        uses: codecov/codecov-action@v5
+        continue-on-error: true
+        with:
+          files: coverage/coverage.xml
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  os:
+    name: Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ windows-latest, macos-latest ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        id: python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+        env:
+          UV_PYTHON: ${{ steps.python.outputs.python-path }}
+
+      - name: Run tests
+        run: uv run pytest
+
+  package:
+    name: Package & Examples
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        id: python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+        env:
+          UV_PYTHON: ${{ steps.python.outputs.python-path }}
+
+      - name: Build the sdist and the wheel
+        run: uv build
+
+      # The files of the wheel and the sdist, the metadata, and no runtime dependency
+      - name: Check the package contents
+        run: uv run python scripts/check_package.py dist
+
+      - name: Check the package renders on PyPI
+        run: uvx twine check --strict dist/*
+
+      # Each example compiles and imports only what the package exports; mypy (Lint & Types) checks the rest
+      - name: Check the examples
+        run: uv run python scripts/check_examples.py
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        id: python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      # The library has no runtime dependency: this must stay so
+      - name: Check there is no runtime dependency
+        run: |
+          test -z "$(uv export --locked --no-dev --no-emit-project --no-header --no-hashes --format requirements-txt | grep -v '^#' | grep -v '^$' || true)"
+
+      - name: Audit the development dependencies
+        run: |
+          uv export --locked --all-groups --no-emit-project --format requirements-txt --output-file requirements-dev.txt
+          uvx pip-audit --disable-pip -r requirements-dev.txt
+        continue-on-error: true
+
+  qa:
+    name: Quality Assurance
+    runs-on: ubuntu-latest
+    needs: [ quality, test, os, package, security ]
+
+    steps:
+      - name: Success notification
+        run: echo "✅ All quality assurance checks passed!"
+
+  publish:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: [ qa ]
+    if: github.event_name == 'release'
+
+    # The environment the PyPI trusted publisher is configured for
+    environment:
+      name: pypi
+      url: https://pypi.org/project/calisero/
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Check the release tag matches the package version
+        run: |
+          VERSION="$(sed -n 's/^VERSION = "\(.*\)"$/\1/p' src/calisero/_version.py)"
+          test "${GITHUB_REF_NAME#v}" = "$VERSION" || { echo "Tag ${GITHUB_REF_NAME} does not match version ${VERSION}"; exit 1; }
+
+      - name: Build the sdist and the wheel
+        run: uv build
+
+      # Trusted publishing (OIDC): no token is stored, and PyPI attaches the build's attestations
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

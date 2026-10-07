@@ -1,0 +1,8 @@
+# LF everywhere, on every platform: Ruff checks the line endings
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+
+# Kept out of the archives GitHub builds for a release
+/.github export-ignore

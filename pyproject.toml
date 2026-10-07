@@ -1,0 +1,140 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "calisero"
+dynamic = ["version"]
+description = "Official Python library for the Calisero SMS API"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE.md"]
+requires-python = ">=3.10"
+authors = [{ name = "Calisero", email = "support@calisero.ro" }]
+keywords = ["calisero", "sms", "otp", "2fa", "verification", "transactional-sms", "api", "sdk"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Communications :: Telephony",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+# No runtime dependency: the HTTP client is urllib, from the standard library
+dependencies = []
+
+[project.urls]
+Homepage = "https://calisero.ro"
+Documentation = "https://docs.calisero.ro"
+Repository = "https://github.com/calisero/calisero-python"
+Issues = "https://github.com/calisero/calisero-python/issues"
+Changelog = "https://github.com/calisero/calisero-python/blob/main/CHANGELOG.md"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.15",
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "ruff>=0.11",
+    # The time zone database for the tests on systems without one (Windows): the
+    # library itself falls back to the Romanian time rules when there is none
+    "tzdata>=2025.2",
+]
+
+[tool.hatch.version]
+path = "src/calisero/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/calisero"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src/calisero",
+    "/tests",
+    "/resources",
+    "/CHANGELOG.md",
+    "/LICENSE.md",
+    "/README.md",
+]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+# The tests import their helpers as `tests.support`
+pythonpath = ["."]
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+xfail_strict = true
+# A warning (an unclosed socket, a deprecation) fails the run
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+branch = true
+source = ["calisero"]
+
+[tool.coverage.report]
+fail_under = 98
+show_missing = true
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "@overload",
+    "class .*\\(Protocol\\):",
+]
+
+[tool.coverage.html]
+directory = "coverage/html"
+
+[tool.coverage.xml]
+output = "coverage/coverage.xml"
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_unreachable = true
+files = ["src", "tests", "examples", "scripts"]
+explicit_package_bases = true
+mypy_path = "src"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+src = ["src", "tests"]
+extend-exclude = ["resources"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "S",   # flake8-bandit
+    "C4",  # flake8-comprehensions
+    "PIE", # flake8-pie
+    "PT",  # flake8-pytest-style
+    "RET", # flake8-return
+    "SIM", # flake8-simplify
+    "TID", # flake8-tidy-imports
+    "RUF", # Ruff's own rules
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Assertions and fake credentials are what tests are made of
+"tests/**" = ["S101", "S105", "S106", "S107"]
+"scripts/**" = ["S101", "S603"]
+"examples/**" = ["S105", "S106"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["calisero"]
+
+[tool.ruff.format]
+docstring-code-format = true

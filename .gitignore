@@ -1,0 +1,44 @@
+# Virtual environments
+/.venv/
+venv/
+
+# Build artifacts
+/dist/
+/build/
+*.egg-info/
+
+# Python caches
+__pycache__/
+*.py[cod]
+/.mypy_cache/
+/.ruff_cache/
+/.pytest_cache/
+
+# Coverage reports
+/coverage/
+.coverage
+.coverage.*
+
+# IDE files
+/.idea/
+/.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local configuration
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+/tmp/
+*.tmp
+*.log
+
+# Automation
+/automation/
