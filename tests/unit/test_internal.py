@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
 from calisero import BearerTokenAuthProvider
+from calisero._internal import json as internal_json
 from calisero._internal.fields import FieldReader, to_integer, to_number
 from calisero._internal.json import MISSING, describe_value, dumps, loads
 
@@ -61,6 +64,19 @@ def test_writes_json_as_javascript_does() -> None:
 def test_refuses_the_constants_json_does_not_have(text: str) -> None:
     with pytest.raises(ValueError, match="is not valid JSON"):
         loads(text)
+
+
+def test_turns_a_decoder_out_of_stack_into_a_value_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    # How deep the decoder can go depends on the platform's stack: the overflow is simulated
+    def overflow(text: str, **kwargs: object) -> object:
+        raise RecursionError("maximum recursion depth exceeded")
+
+    monkeypatch.setattr(internal_json, "json", SimpleNamespace(loads=overflow))
+
+    with pytest.raises(ValueError, match=r"^The JSON nests too deeply\.$") as caught:
+        loads("[[[")
+
+    assert isinstance(caught.value.__cause__, RecursionError)
 
 
 def test_hides_the_api_key_when_the_auth_provider_is_printed() -> None:

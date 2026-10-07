@@ -45,9 +45,11 @@ class TestFromJson:
         with pytest.raises(InvalidWebhookPayloadError, match=r"^Invalid delivery webhook payload: "):
             DeliveryWebhookMessage.from_json(b'{"messageId": "\xff"}')
 
-    def test_refuses_a_body_nested_too_deeply(self) -> None:
-        with pytest.raises(InvalidWebhookPayloadError, match="nests too deeply"):
-            DeliveryWebhookMessage.from_json("[" * 100_000)
+    def test_refuses_a_deeply_nested_body_without_crashing(self) -> None:
+        # Whether the decoder runs out of stack depends on the platform (Python 3.14 measures the
+        # real stack): either way the payload is refused, and no RecursionError gets through
+        with pytest.raises(InvalidWebhookPayloadError, match=r"^Invalid delivery webhook payload: "):
+            DeliveryWebhookMessage.from_json("[" * 100_000 + "]" * 100_000)
 
     def test_refuses_json_that_is_not_an_object_like_the_list_sent_for_a_cancelled_message(self) -> None:
         with pytest.raises(

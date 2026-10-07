@@ -4,7 +4,7 @@ The library's tests live in `tests/` and run with [pytest](https://docs.pytest.o
 network: the services run against a stub transport, and the HTTP layer and the webhook handler against local HTTP
 servers the tests start on `127.0.0.1`.
 
-As of 1.0.0 the suite has **529 tests in 23 files** and covers 100% of the lines and branches of `src/`. CI fails
+As of 1.0.0 the suite has **530 tests in 23 files** and covers 100% of the lines and branches of `src/`. CI fails
 below the `fail_under` set in `pyproject.toml` (98%, branches included). Any warning fails a test, an unclosed socket
 included (`filterwarnings = ["error"]`).
 
@@ -47,7 +47,7 @@ version builds the package, installs the wheel and the sdist in fresh environmen
 | `test_version.py` | 4 | `VERSION` matches the installed package and the latest version of CHANGELOG.md, and is named in the `User-Agent` |
 | `test_errors.py` | 17 | The exception hierarchy, the attributes of each exception and their defaults, copies of the details, pickling |
 | `test_payloads.py` | 25 | The request bodies: API field names in the documented order, options left out when `None`, kept when `False` or `0`; `schedule_at` in Romania time, summer and winter time and the switches between them, other time zones, naive datetimes refused; the fallback to the European rule without a time zone database, checked against the database from 1997 to 2040 |
-| `test_internal.py` | 33 | Describing values for error messages, integers and numbers as JavaScript reads them, decimal strings, JSON without NaN, the API key hidden from `repr()` |
+| `test_internal.py` | 34 | Describing values for error messages, integers and numbers as JavaScript reads them, decimal strings, JSON without NaN, a decoder out of stack turned into a `ValueError`, the API key hidden from `repr()` |
 
 #### HTTP Layer (`tests/unit/http`)
 
@@ -67,7 +67,7 @@ version builds the package, installs the wheel and the sdist in fresh environmen
 | `test_account.py` | 17 | Full and minimal accounts, the daily limit, credits as numbers or decimal strings, malformed credits refused |
 | `test_opt_out_and_verification.py` | 9 | Opt-outs with and without a reason; verifications unverified, verified, expired, sent with a template |
 | `test_pagination_and_meta.py` | 11 | Pages, empty last pages, links and meta, iteration; `ResponseMeta` read from the headers, in any case, ignoring values that are not counts |
-| `test_delivery_webhook_message.py` | 22 | Callback payloads from text or bytes: full, minimal, without the daily limit, amounts as strings; refusing invalid JSON, invalid UTF-8, deep nesting, `[]`, and every missing or malformed required field |
+| `test_delivery_webhook_message.py` | 22 | Callback payloads from text or bytes: full, minimal, without the daily limit, amounts as strings; refusing invalid JSON, invalid UTF-8, deep nesting (whatever the platform's stack), `[]`, and every missing or malformed required field |
 
 #### Services (`tests/unit/services`)
 
