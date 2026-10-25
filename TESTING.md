@@ -4,7 +4,7 @@ The library's tests live in `tests/` and run with [pytest](https://docs.pytest.o
 network: the services run against a stub transport, and the HTTP layer and the webhook handler against local HTTP
 servers the tests start on `127.0.0.1`.
 
-As of 1.0.0 the suite has **530 tests in 23 files** and covers 100% of the lines and branches of `src/`. CI fails
+As of 1.0.1 the suite has **530 tests in 23 files** and covers 100% of the lines and branches of `src/`. CI fails
 below the `fail_under` set in `pyproject.toml` (98%, branches included). Any warning fails a test, an unclosed socket
 included (`filterwarnings = ["error"]`).
 

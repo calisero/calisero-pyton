@@ -34,9 +34,9 @@ dependencies = []
 [project.urls]
 Homepage = "https://calisero.ro"
 Documentation = "https://docs.calisero.ro"
-Repository = "https://github.com/calisero/calisero-python"
-Issues = "https://github.com/calisero/calisero-python/issues"
-Changelog = "https://github.com/calisero/calisero-python/blob/main/CHANGELOG.md"
+Repository = "https://github.com/calisero/calisero-pyton"
+Issues = "https://github.com/calisero/calisero-pyton/issues"
+Changelog = "https://github.com/calisero/calisero-pyton/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [
@@ -60,6 +60,7 @@ include = [
     "/src/calisero",
     "/tests",
     "/resources",
+    "/AGENTS.md",
     "/CHANGELOG.md",
     "/LICENSE.md",
     "/README.md",

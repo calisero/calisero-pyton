@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-25
+
+The first version published to PyPI: the publish job of 1.0.0 failed, so 1.0.0 exists only as a GitHub release. The library's code and API are unchanged; only the version in the `User-Agent` header moves to 1.0.1.
+
+### Changed
+- Checked against version 1.0.15 of the Calisero API. Its OpenAPI document (`resources/openApi/api-v1.json`) now describes the delivery status webhook as a callback of `POST /messages`, and documents the rules of `callback_url` (a public http or https address), `sender` (approved for the account, written exactly as approved) and of a verification's `brand` and `template` (no links). The API's operations and fields are unchanged, and so is the library; the contract tests read the new document.
+
+### Fixed
+- The project URLs of the package metadata (`pyproject.toml`), the README's badges, `git clone` command and issues link, and the `git clone` command of `CONTRIBUTING.md` named `calisero/calisero-python` instead of the library's repository, `calisero/calisero-pyton`.
+
+### Documentation
+- `AGENTS.md`: guidance for AI coding agents, both for integrating Calisero into an application with this library (configuration, sending, OTP, statuses, the delivery webhook, errors and trace IDs, sandbox keys, the pitfalls of the API) and for working on the library. It ships in the sdist, which `scripts/check_package.py` now checks.
+- `README.md` and the docstrings of `messages.create()` and `verifications.create()`: the rules API 1.0.15 documents for `callback_url`, `sender`, and a verification's `brand` and `template`.
+- `CONTRIBUTING.md`: the "Publishing Setup" section names the repository the PyPI trusted publisher is configured for, `calisero-pyton`.
+
 ## [1.0.0] - 2026-10-06
 
 First release of the official Python library for the Calisero SMS API, covering version 1.0.14 of the API: the same API surface as `calisero/calisero-php` 2.3.1 and `@calisero/calisero-node` 1.0.1, with a synchronous, fully typed Python interface.

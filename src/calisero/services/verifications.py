@@ -56,9 +56,11 @@ class VerificationService:
 
         Args:
             phone: the phone number to verify, in international E.164 format
-            brand: the brand named in the default message, at most 120 characters: required unless
-                a `template` is given
-            template: a custom message, at most 600 characters, that must hold {code}
+            brand: the brand named in the default message, at most 120 characters, without links:
+                required unless a `template` is given
+            template: a custom message, at most 600 characters, that must hold {code} and may hold no
+                links (web addresses, domains, emails or IP addresses): the code goes out from a
+                shared sender
             expires_in: how many minutes the code stays valid, 1 to 10: 5 when omitted
             timeout: seconds to wait for the answer, instead of the client's
 

@@ -8,7 +8,7 @@ You need Python 3.10 or later and [uv](https://docs.astral.sh/uv/) (the version 
 checks the code style and the types with).
 
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/your-username/calisero-python.git`
+2. Clone your fork: `git clone https://github.com/your-username/calisero-pyton.git`
 3. Install the development dependencies: `uv sync`
 4. Create a new branch: `git checkout -b feature/your-feature-name`
 
@@ -78,10 +78,12 @@ each file, linking it to the commit and the workflow run that built it.
 
 ### Publishing Setup
 
-Trusted publishing (OIDC) needs no token at all. Before the first release:
+Trusted publishing (OIDC) needs no token at all. Before the first version published to PyPI (1.0.1: the publish job
+of 1.0.0 failed, so 1.0.0 exists only as a GitHub release):
 
 1. On pypi.org, open Your projects → Publishing and add a pending GitHub publisher: project name `calisero`, owner
-   `calisero`, repository `calisero-python`, workflow `ci.yml`, environment `pypi`
+   `calisero`, repository `calisero-pyton`, workflow `ci.yml`, environment `pypi`. Each value must match exactly:
+   PyPI refuses a publication from any other repository, workflow or environment
 2. In the GitHub repository, create the `pypi` environment (Settings → Environments), optionally with required
    reviewers so that a person approves each publication
 

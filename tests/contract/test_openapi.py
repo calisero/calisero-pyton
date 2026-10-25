@@ -158,19 +158,23 @@ def success_of(operation: dict[str, Any]) -> tuple[int, dict[str, Any]]:
     return int(status), response
 
 
-# The API's operations: the delivery webhook, which Calisero sends rather than answers, is left out
+# The API's operations. The delivery webhook, which Calisero sends rather than answers, is a callback of
+# POST /messages, not one of them
 DOCUMENTED_OPERATIONS: list[tuple[str, str, dict[str, Any]]] = [
     (path, method.upper(), operation)
     for path, methods in SPEC["paths"].items()
-    if path.startswith("/")
     for method, operation in methods.items()
 ]
+
+DELIVERY_WEBHOOK: dict[str, Any] = SPEC["paths"]["/messages"]["post"]["callbacks"]["deliveryStatus"][
+    "{$request.body#/callback_url}"
+]["post"]
 
 OPERATIONS = [pytest.param(*operation, id=f"{operation[1]} {operation[0]}") for operation in DOCUMENTED_OPERATIONS]
 
 
 def test_the_document_is_the_version_this_library_was_built_for() -> None:
-    assert re.match(r"^1\.0\.14\b", SPEC["info"]["version"])
+    assert re.match(r"^1\.0\.15\b", SPEC["info"]["version"])
     assert SPEC["servers"][0]["url"] == DEFAULT_BASE_URL
 
 
@@ -277,8 +281,7 @@ def test_every_documented_field_of_the_pagination_is_read() -> None:
 
 
 def test_the_documented_delivery_webhook_payload_is_read_every_field_of_it() -> None:
-    webhook = SPEC["paths"]["https://yoursite.com/your-callback-url"]["post"]
-    example = webhook["requestBody"]["content"]["application/json"]["example"]
+    example = DELIVERY_WEBHOOK["requestBody"]["content"]["application/json"]["example"]
 
     message = DeliveryWebhookMessage.from_dict(example)
 

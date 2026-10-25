@@ -4,4 +4,4 @@ The package build reads it from here, and a test keeps it in step with the lates
 version of CHANGELOG.md.
 """
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
