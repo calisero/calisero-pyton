@@ -52,9 +52,10 @@ class MessageService:
             schedule_at: when to send it: a timezone-aware datetime, converted to Romania time, or a
                 "YYYY-MM-DD HH:MM:SS" string in Romania time. Sent at once when omitted or already
                 past today; from today to 5 years ahead
-            callback_url: the URL Calisero posts the message's delivery status updates to
-            sender: one of the account's approved sender IDs, exactly as approved; the default
-                sender when omitted
+            callback_url: the URL Calisero posts the message's delivery status updates to: a public
+                http or https address (private, loopback and link-local ones are refused)
+            sender: one of the account's approved sender IDs, written exactly as approved (the match
+                is case-sensitive); the default sender when omitted
             shorten_urls: replace the http:// and https:// links of the body with short ones, whose
                 clicks are counted
             timeout: seconds to wait for the answer, instead of the client's

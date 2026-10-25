@@ -1,8 +1,8 @@
 # Calisero Python SMS API Library
 
 [![PyPI version](https://img.shields.io/pypi/v/calisero.svg?style=flat-square)](https://pypi.org/project/calisero/)
-[![CI](https://img.shields.io/github/actions/workflow/status/calisero/calisero-python/ci.yml?branch=main&label=tests&style=flat-square)](https://github.com/calisero/calisero-python/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/codecov/c/github/calisero/calisero-python?style=flat-square)](https://codecov.io/gh/calisero/calisero-python)
+[![CI](https://img.shields.io/github/actions/workflow/status/calisero/calisero-pyton/ci.yml?branch=main&label=tests&style=flat-square)](https://github.com/calisero/calisero-pyton/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/codecov/c/github/calisero/calisero-pyton?style=flat-square)](https://codecov.io/gh/calisero/calisero-pyton)
 [![Python](https://img.shields.io/pypi/pyversions/calisero.svg?style=flat-square)](https://pypi.org/project/calisero/)
 [![Typed](https://img.shields.io/badge/typing-mypy%20strict-2a6db2.svg?style=flat-square)](https://mypy-lang.org)
 [![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg?style=flat-square)](pyproject.toml)
@@ -256,8 +256,8 @@ This library includes runnable examples for every operation in the [`examples/`]
 ### 🚀 Running Examples
 
 ```bash
-git clone https://github.com/calisero/calisero-python.git
-cd calisero-python
+git clone https://github.com/calisero/calisero-pyton.git
+cd calisero-pyton
 uv sync
 CALISERO_API_KEY=your-api-key-here CALISERO_TEST_PHONE=+40742123456 uv run python examples/messages/send_simple_sms.py
 ```
@@ -296,11 +296,18 @@ print(response.response_meta.daily_remaining)  # Messages left today (None: no d
 | `visible_body` | `str` | Shown instead of `body` in the API's answers and the dashboard |
 | `validity` | `int` | Validity period, in hours |
 | `schedule_at` | `datetime \| str` | When to send it: a timezone-aware `datetime`, or a `YYYY-MM-DD HH:MM:SS` string in Romania time |
-| `callback_url` | `str` | Where Calisero posts the delivery status updates |
-| `sender` | `str` | One of your approved sender IDs; the default sender when omitted |
+| `callback_url` | `str` | Where Calisero posts the delivery status updates: a public `http(s)://` address |
+| `sender` | `str` | One of your approved sender IDs, written exactly as approved; the default sender when omitted |
 | `shorten_urls` | `bool` | Shorten the `http(s)://` links of the body |
 
 The arguments left as `None` are not sent; `False` and `0` are.
+
+- `sender` must be a sender ID already approved for your account (Messages > Senders in the dashboard), written
+  exactly as approved: the match is case-sensitive. A sender that is unknown, pending or rejected is refused with a
+  `ValidationError` (422) and nothing is sent. The sender IDs of the examples (`Calisero`, `YourApp`...) are
+  placeholders, not senders you can use.
+- `callback_url` must be an `http` or `https` address on the public Internet: private, loopback and link-local
+  addresses are refused, and redirects are not followed.
 
 #### Shorten URLs
 
@@ -383,6 +390,9 @@ print(verification.expires_at)
 # The code's SMS counts towards the account's daily sending limit
 print(response.response_meta.daily_remaining)
 ```
+
+Neither the `brand` nor the `template` may contain links (web addresses, domains, emails or IP addresses): the codes
+are sent from a shared sender, so the API refuses them with a `ValidationError` (422).
 
 #### Get Verification Details
 
@@ -755,7 +765,7 @@ Every request names the library and its version, then the runtime, so Calisero c
 which version sent them:
 
 ```
-User-Agent: Calisero-SMS-Python/1.0.0 (CPython 3.14.0; linux x86_64)
+User-Agent: Calisero-SMS-Python/1.0.1 (CPython 3.14.0; linux x86_64)
 ```
 
 A request whose `User-Agent` starts with `Calisero-SMS-Python/` comes from this library. Give your application's name
@@ -765,7 +775,7 @@ with `app_info` and it follows, so the requests of each of your applications can
 client = SmsClient.create(os.environ["CALISERO_API_KEY"], app_info=AppInfo("MyShop", "2.1.0"))
 
 print(client.http_client.user_agent)
-# Calisero-SMS-Python/1.0.0 (CPython 3.14.0; linux x86_64) MyShop/2.1.0
+# Calisero-SMS-Python/1.0.1 (CPython 3.14.0; linux x86_64) MyShop/2.1.0
 ```
 
 Characters a header does not allow (spaces, diacritics…) become `-` in the name and the version.
@@ -954,7 +964,7 @@ This library is open-sourced software licensed under the [MIT license](LICENSE.m
 
 - 📧 Email: support@calisero.ro
 - 📖 Documentation: [https://docs.calisero.ro](https://docs.calisero.ro)
-- 🐛 Issues: [GitHub Issues](https://github.com/calisero/calisero-python/issues)
+- 🐛 Issues: [GitHub Issues](https://github.com/calisero/calisero-pyton/issues)
 
 ## Changelog
 

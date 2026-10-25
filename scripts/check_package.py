@@ -46,6 +46,7 @@ def check_sdist(sdist: Path) -> list[str]:
     required = [
         "pyproject.toml",
         "README.md",
+        "AGENTS.md",
         "CHANGELOG.md",
         "LICENSE.md",
         "src/calisero/__init__.py",
