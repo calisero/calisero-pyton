@@ -70,8 +70,11 @@ try:
     verification = client.verifications.validate(phone=phone, code=user_input).data
     verified = verification.status == VerificationStatus.VERIFIED
 except ValidationError as error:
-    ...  # wrong or expired code, or too many attempts (422): error.message says which
+    ...  # wrong, expired or already used code, or too many attempts (422): error.message says which
 ```
+
+A code validates only once: sent again after it verified, it is refused (422, "The validation code has already been
+used."). Record the verification in your application; never validate the same code twice.
 
 ### Read a message's status
 
@@ -150,9 +153,20 @@ happened to that request.
   ț) or emoji (UCS-2). A longer text is split into parts, each billed as one SMS (`parts` on the message); `body`
   takes at most 1600 characters. When cost matters, a text without diacritics keeps 160-character parts: an option,
   not a rule.
-- **Sender ID**: alphanumeric, at most 11 characters, approved for the account and written exactly as approved;
-  otherwise 422 and nothing is sent. Omit `sender` for the default sender. It cannot receive replies. Never take it
-  from user input. OTP codes go out from the shared "Verify" sender and need no sender of your own.
+- **Sender ID**: alphanumeric, at most 11 characters, approved for the account and written exactly as approved; one
+  that is unknown, still pending, rejected or another account's is refused (422, "The sender is invalid or is not
+  approved." on `sender`) and nothing is sent. Omit `sender` for the default sender until yours is approved. It cannot
+  receive replies. Never take it from user input. OTP codes go out from the shared "Verify" sender and need no sender
+  of your own.
+- **Approved link domains**: on an account restricted to its approved link domains, every link in `body` (with or
+  without `https://`) must go to one of them; links Calisero shortens are checked by the address they open. Any other
+  is refused (422 on `body`, `validation_errors["body"]` naming the domain): nothing is created or billed, sandbox
+  included. A scheduled message whose domain is rejected or revoked before it is due ends `failed` (error code 1005 in
+  the dashboard). Domains are asked for in the dashboard (Messages › Link domains).
+- **TLS**: the API accepts TLS 1.2 and 1.3 only (a client offering only TLS 1.0 or 1.1 is refused during the
+  handshake, a `TransportError`). Python 3.10+ offers both by default; a custom `ssl_context` must allow one. Keep
+  `base_url` on `https://`: `http://` is redirected, and the library follows no redirect.
+- **Sandbox and URL shortening**: test messages keep their links as written; `shortened_urls` comes back empty.
 - **Scheduling**: the API reads `schedule_at` as `YYYY-MM-DD HH:MM:SS`, Romania time (Europe/Bucharest). Pass a
   timezone-aware `datetime` and the library converts it (a naive one raises `ValueError`); a string is sent as is and
   must already be in that format and time zone.

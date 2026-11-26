@@ -86,7 +86,7 @@ class VerificationService:
     def validate(self, *, phone: str, code: str, timeout: float | None = None) -> GetVerificationResponse:
         """Check a code against the latest verification of a phone number.
 
-        Checking a verified code again succeeds.
+        A code validates only once: checking it again is refused, as a code already used.
 
         Args:
             phone: the phone number the code was sent to, in international E.164 format
@@ -94,7 +94,7 @@ class VerificationService:
             timeout: seconds to wait for the answer, instead of the client's
 
         Raises:
-            ValidationError: for a wrong, expired or exhausted code (5 attempts); its
+            ValidationError: for a wrong, expired, exhausted (5 attempts) or already used code; its
                 `validation_errors["code"]` says which
             NotFoundError: when no verification was started for the phone number
         """

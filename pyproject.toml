@@ -49,6 +49,10 @@ dev = [
     "tzdata>=2025.2",
 ]
 
+[tool.uv]
+# The version is read from _version.py: changing it rebuilds the editable install, whose metadata a test checks
+cache-keys = [{ file = "pyproject.toml" }, { file = "src/calisero/_version.py" }]
+
 [tool.hatch.version]
 path = "src/calisero/_version.py"
 

@@ -134,6 +134,34 @@ class TestCreate:
 
         assert caught.value.validation_errors == {"recipient": ["The recipient has opted out of receiving messages."]}
 
+    def test_raises_the_refusal_of_a_sender_not_approved_for_the_account(self) -> None:
+        body = {
+            "message": "The sender is invalid or is not approved.",
+            "errors": {"sender": ["The sender is invalid or is not approved."]},
+            "trace_id": TRACE_ID,
+        }
+        client, _ = client_answering(json_response(422, body))
+
+        with pytest.raises(ValidationError, match=r"^The sender is invalid or is not approved\.$") as caught:
+            client.messages.create(recipient=PHONE, body="Hello!", sender="Calisero")
+
+        assert caught.value.validation_errors == {"sender": ["The sender is invalid or is not approved."]}
+        assert caught.value.trace_id == TRACE_ID
+
+    def test_raises_the_refusal_of_a_link_to_a_domain_not_approved_for_the_account(self) -> None:
+        refusal = (
+            "Links to oix.ro-inx.live are not allowed for this account: it is not one of its approved link domains."
+        )
+        body = {"message": refusal, "errors": {"body": [refusal]}, "trace_id": TRACE_ID}
+        client, _ = client_answering(json_response(422, body))
+
+        with pytest.raises(ValidationError) as caught:
+            client.messages.create(recipient=PHONE, body="Claim your prize: oix.ro-inx.live/win")
+
+        assert caught.value.message == refusal
+        assert caught.value.validation_errors == {"body": [refusal]}
+        assert "sender" not in caught.value.validation_errors
+
     def test_passes_its_timeout(self) -> None:
         client, transport = client_answering(json_response(201, {"data": message_data()}))
 

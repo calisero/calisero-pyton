@@ -174,7 +174,7 @@ OPERATIONS = [pytest.param(*operation, id=f"{operation[1]} {operation[0]}") for 
 
 
 def test_the_document_is_the_version_this_library_was_built_for() -> None:
-    assert re.match(r"^1\.0\.15\b", SPEC["info"]["version"])
+    assert re.match(r"^1\.0\.17\b", SPEC["info"]["version"])
     assert SPEC["servers"][0]["url"] == DEFAULT_BASE_URL
 
 

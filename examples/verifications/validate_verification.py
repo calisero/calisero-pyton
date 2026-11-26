@@ -22,7 +22,7 @@ def main() -> None:
     try:
         verification = SmsClient.create(API_KEY).verifications.validate(phone=PHONE, code=code).data
     except ValidationError as error:
-        # A wrong code, an expired one, or too many attempts (5)
+        # A wrong code, an expired one, too many attempts (5), or a code already used: a code validates only once
         print(f"❌ Validation failed: {error.message}")
 
         for field, messages in error.validation_errors.items():
@@ -43,7 +43,8 @@ def main() -> None:
     print("✅ Verification validated successfully!")
     print(f"📱 Phone: {verification.phone}")
     print(f"📊 Status: {verification.status}")
-    print(f"✅ Verified at: {verification.verified_at or 'Just verified / already verified'}")
+    print(f"✅ Verified at: {verification.verified_at or 'Just now'}")
+    print("💡 Record the verification in your application: the same code is refused if checked again")
     print(f"🧪 Attempts used: {verification.attempts}")
 
 

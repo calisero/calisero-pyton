@@ -150,3 +150,12 @@ def test_uses_the_tls_settings_it_is_given() -> None:
     # urllib's OpenerDirector keeps its handlers in an attribute it does not document
     handlers = transport._opener.handlers  # type: ignore[attr-defined]
     assert any(getattr(handler, "_context", None) is context for handler in handlers)
+
+
+def test_offers_tls_1_2_or_later_by_default() -> None:
+    # The API refuses a client that offers only TLS 1.0 or 1.1. Without an ssl_context of its own, urllib uses
+    # this context, which Python 3.10 and later never let go below TLS 1.2
+    context = ssl._create_default_https_context()
+
+    assert context.minimum_version >= ssl.TLSVersion.TLSv1_2
+    assert context.maximum_version in (ssl.TLSVersion.MAXIMUM_SUPPORTED, ssl.TLSVersion.TLSv1_3)

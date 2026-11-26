@@ -1,9 +1,12 @@
 """Send an SMS with every option.
 
 A body shown masked, a validity, a scheduled time, a delivery status callback, a
-sender ID and URL shortening.
+sender ID and URL shortening. The sender ID is read from CALISERO_SENDER: it must be
+one approved for your account, written exactly as approved, and the message goes out
+under the default sender without it.
 
-    CALISERO_API_KEY=... CALISERO_TEST_PHONE=+40742123456 python examples/messages/send_advanced_sms.py
+    CALISERO_API_KEY=... CALISERO_TEST_PHONE=+40742123456 CALISERO_SENDER=YourBrand \
+        python examples/messages/send_advanced_sms.py
 """
 
 from __future__ import annotations
@@ -15,6 +18,8 @@ from calisero import ApiError, DailyLimitExceededError, SmsClient, ValidationErr
 
 API_KEY = os.environ.get("CALISERO_API_KEY") or "your-api-key-here"
 RECIPIENT = os.environ.get("CALISERO_TEST_PHONE") or "+40742***350"
+# A sender that is not approved for the account is refused with a 422, and nothing is sent
+SENDER = os.environ.get("CALISERO_SENDER") or None
 
 
 def main() -> None:
@@ -23,6 +28,8 @@ def main() -> None:
     try:
         response = SmsClient.create(API_KEY).messages.create(
             recipient=RECIPIENT,
+            # On an account restricted to its approved link domains, the link must go to one of them:
+            # any other is refused with a 422 on the body field
             body="Your code is 123456. Manage alerts: https://yourapp.com/account/alerts",
             # What the API shows instead of the body in its answers and in the dashboard
             visible_body="Your code is ******. Manage alerts: https://yourapp.com/account/alerts",
@@ -30,8 +37,8 @@ def main() -> None:
             # A timezone-aware datetime is converted to the Romania time the API expects
             schedule_at=datetime.now(timezone.utc) + timedelta(hours=1),
             callback_url="https://yourapp.com/webhooks/sms",
-            # One of your approved sender IDs; leave it out for the default sender
-            sender="Calisero",
+            # One of your approved sender IDs; None for the default sender
+            sender=SENDER,
             shorten_urls=True,
         )
     except ValidationError as error:
