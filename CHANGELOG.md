@@ -4,7 +4,26 @@ All notable changes to `calisero` (the Calisero Python library) will be document
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.2] - 2026-11-26
+
+Support for versions 1.0.16 and 1.0.17 of the Calisero API, 1.0.17 as documented on 18.11.2026 (approved link domains included). Their changes are all on the API's side: no field or endpoint was added, so the library's code and API are unchanged; only the version in the `User-Agent` header moves to 1.0.2. Upgrading needs no code change, but two of them change what an application sees: a verification code validates only once, and an account restricted to its approved link domains may link only to them.
+
+### Changed
+- `examples/messages/send_advanced_sms.py` reads the sender ID from `CALISERO_SENDER`, and sends under the default sender without it. It used `Calisero`, which the API documents as a placeholder: a sender that is not approved for the account is refused with a 422, and nothing is sent. It also says its link must go to one of your approved link domains.
+- `examples/verifications/validate_verification.py` no longer says a code may be validated again.
+
+### Documentation
+- **Approved link domains** (API 1.0.17, 18.11.2026). On an account restricted to its approved link domains, every link in a message's body, with or without `https://`, must go to a domain approved for the account, test messages included; links Calisero shortens are checked by the address they open. `messages.create()` raises any other link as a `ValidationError` on `validation_errors["body"]`, its message naming the refused domain: the message is not created, not sent and not billed. A scheduled message whose domain is rejected or revoked before it is due is not sent: its status becomes `failed` (error code 1005 in the dashboard). A new "Approved Link Domains" section of `README.md`, with how to tell a refused link from a refused sender, `AGENTS.md` and the docstring of `messages.create()` say so.
+- **A code validates only once** (API 1.0.17). `verifications.validate()` with a code that already verified is refused with a `ValidationError` ("The validation code has already been used.") instead of succeeding again. `README.md`, `AGENTS.md` and the docstring of `verifications.validate()`, which said checking a verified code again succeeds, now say so.
+- **TLS** (API 1.0.16): the API accepts TLS 1.2 and TLS 1.3 only since 1 November 2026, refusing a client that offers only TLS 1.0 or 1.1 during the handshake, and redirects `http://` to `https://`. Python 3.10 and later offer TLS 1.2 and 1.3 by default, so the library needs no change; a new "TLS" section of `README.md`, and `AGENTS.md`, say why the base URL must stay `https://` and what an `ssl_context` of your own must allow.
+- **Senders**: a sender that is unknown, still pending, rejected or another account's is refused with a `ValidationError` ("The sender is invalid or is not approved." on `sender`), in `README.md`, `AGENTS.md` and the docstring of `messages.create()`.
+- **URL shortening**: test messages (a sandbox account or API key) keep their links as written and come back with an empty `shortened_urls`, in `README.md`, `AGENTS.md` and the docstring of `messages.create()`.
+- `examples/README.md`: the `CALISERO_SENDER` variable.
+
+### Tests
+- The contract tests follow version 1.0.17 of the API's OpenAPI document (`resources/openApi/api-v1.json`, as of 18.11.2026): its own validation error answer for `POST /messages`, with a refused sender and a refused link domain as examples, and the refusal of a code already used by `PUT /verifications/validate`, each read as a `ValidationError` with the API's message.
+- Unit tests for the refusal of a sender not approved, of a link to a domain not approved and of a code already used, and a test that the default TLS settings offer TLS 1.2 or later.
+- `pyproject.toml`: uv rebuilds the editable install when `src/calisero/_version.py` changes (`[tool.uv] cache-keys`), so the test that matches the installed version against it passes right after a version bump, without `uv sync --reinstall`.
 
 ## [1.0.1] - 2026-10-25
 

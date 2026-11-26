@@ -4,7 +4,7 @@ The library's tests live in `tests/` and run with [pytest](https://docs.pytest.o
 network: the services run against a stub transport, and the HTTP layer and the webhook handler against local HTTP
 servers the tests start on `127.0.0.1`.
 
-As of 1.0.1 the suite has **530 tests in 23 files** and covers 100% of the lines and branches of `src/`. CI fails
+As of 1.0.2 the suite has **536 tests in 23 files** and covers 100% of the lines and branches of `src/`. CI fails
 below the `fail_under` set in `pyproject.toml` (98%, branches included). Any warning fails a test, an unclosed socket
 included (`filterwarnings = ["error"]`).
 
@@ -56,7 +56,7 @@ version builds the package, installs the wheel and the sdist in fresh environmen
 | `test_http_client.py` | 33 | The requests: method, URL, query string (booleans, encoding), headers, the User-Agent with and without your application, JSON body (UTF-8 included); base URLs refused unless http(s); per-call timeouts; the auth provider and its errors; tokens a header cannot carry; no Idempotency-Key; the answers: JSON, empty, `[]`, not JSON, NaN; `last_response` |
 | `test_response_handling.py` | 43 | Every error status mapped to its exception; the message and the trace ID (header in any case, body, `X-Request-ID`); error bodies that are not JSON; 422 field errors; the request rate limit's 429 against the daily sending limit's; headers that are not whole seconds; requests that got no answer; interruptions let through |
 | `test_http_response.py` | 8 | Header names matched case-insensitively; repeated headers; headers from a mapping, pairs or an HTTP library's headers; bodies as bytes |
-| `test_urllib_transport.py` | 24 | Over real HTTP: the request and the answer, error statuses as answers, redirects not followed, timeouts (the transport's and the request's), refused connections, the options, proxies (given, or from the environment), TLS settings |
+| `test_urllib_transport.py` | 25 | Over real HTTP: the request and the answer, error statuses as answers, redirects not followed, timeouts (the transport's and the request's), refused connections, the options, proxies (given, or from the environment), TLS settings, and TLS 1.2 or later by default, as the API requires |
 | `test_user_agent.py` | 12 | The User-Agent: the library and its version, then the runtime (CPython, PyPy, none), then your application, reduced to the characters a header allows so it cannot break the header |
 
 #### Models (`tests/unit/models`)
@@ -76,9 +76,9 @@ Each test answers with a stub transport (`tests/support/stub_transport.py`) and 
 
 | File | Tests | Covers |
 |---|---|---|
-| `test_messages.py` | 27 | `create()` with every option, scheduled, with shortened links, its `response_meta`, the daily limit and validation errors; `get()`, ids encoded, empty ids refused, unexpected answers; `list()` and its pages; `delete()` |
+| `test_messages.py` | 29 | `create()` with every option, scheduled, with shortened links, its `response_meta`, the daily limit and validation errors (an opted-out recipient, a sender not approved, a link to a domain not approved); `get()`, ids encoded, empty ids refused, unexpected answers; `list()` and its pages; `delete()` |
 | `test_opt_outs.py` | 11 | `create()` with and without a reason, a duplicate; `get()`, `list()`, `update()`, `delete()`; empty ids |
-| `test_verifications.py` | 12 | `list()` with the status filter; `create()` with a brand or a template, the daily limit; `get()`; `validate()` and each of its 422s, and its 404 |
+| `test_verifications.py` | 13 | `list()` with the status filter; `create()` with a brand or a template, the daily limit; `get()`; `validate()` and each of its 422s (a code already used included), and its 404 |
 | `test_accounts.py` | 5 | `get()` for a typical account, a sandbox one without a daily limit; 401 and 403 |
 | `test_support.py` | 10 | The services' helpers: reading answers and pages, the page query, ids encoded as `encodeURIComponent()` does |
 
@@ -98,7 +98,7 @@ Each test answers with a stub transport (`tests/support/stub_transport.py`) and 
 
 | File | Tests | Covers |
 |---|---|---|
-| `test_openapi.py` | 112 | The library against the API's OpenAPI document (`resources/openApi/api-v1.json`): every documented operation is implemented with its method, path and query; every documented example answer is read; every documented field of every resource is read; every documented request field can be sent, and nothing else; every documented error example maps to its exception class with its message |
+| `test_openapi.py` | 114 | The library against the API's OpenAPI document (`resources/openApi/api-v1.json`, version 1.0.17 as of 18.11.2026): every documented operation is implemented with its method, path and query; every documented example answer is read; every documented field of every resource is read; every documented request field can be sent, and nothing else; every documented error example maps to its exception class with its message |
 
 When the API changes, replace `resources/openApi/api-v1.json` with the new document: the contract tests then show
 what the library lacks.

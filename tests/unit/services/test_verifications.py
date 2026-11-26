@@ -101,6 +101,8 @@ class TestValidate:
             "The verification code is invalid.",
             "The verification code has expired.",
             "Too many attempts. Please request a new code.",
+            # A code validates only once (API 1.0.17)
+            "The validation code has already been used.",
         ],
     )
     def test_raises_a_validation_error_for_a_code_refused(self, message: str) -> None:

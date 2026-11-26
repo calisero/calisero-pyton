@@ -121,9 +121,12 @@ try:
     verification = client.verifications.validate(phone="+40742***350", code=user_input).data
     print(f"Verified at {verification.verified_at}")
 except ValidationError as error:
-    # A wrong or expired code, or too many attempts (5)
+    # A wrong or expired code, too many attempts (5), or a code already used
     print(error.message)
 ```
+
+A code validates only once: once verified, the same code sent again is refused (`"The validation code has already
+been used."`), so record the verification in your application rather than checking the code again.
 
 To send a code you generate yourself, hide it in the API's answers and in the dashboard with `visible_body`:
 
@@ -292,7 +295,7 @@ print(response.response_meta.daily_remaining)  # Messages left today (None: no d
 | Argument | Type | Description |
 |---|---|---|
 | `recipient` | `str` | **Required.** Mobile number in E.164 format, e.g. `+40742123456` |
-| `body` | `str` | **Required.** The text, at most 1600 characters |
+| `body` | `str` | **Required.** The text, at most 1600 characters; its links may have to go to approved domains (below) |
 | `visible_body` | `str` | Shown instead of `body` in the API's answers and the dashboard |
 | `validity` | `int` | Validity period, in hours |
 | `schedule_at` | `datetime \| str` | When to send it: a timezone-aware `datetime`, or a `YYYY-MM-DD HH:MM:SS` string in Romania time |
@@ -303,17 +306,48 @@ print(response.response_meta.daily_remaining)  # Messages left today (None: no d
 The arguments left as `None` are not sent; `False` and `0` are.
 
 - `sender` must be a sender ID already approved for your account (Messages > Senders in the dashboard), written
-  exactly as approved: the match is case-sensitive. A sender that is unknown, pending or rejected is refused with a
-  `ValidationError` (422) and nothing is sent. The sender IDs of the examples (`Calisero`, `YourApp`...) are
-  placeholders, not senders you can use.
+  exactly as approved: the match is case-sensitive. A sender that is unknown, still pending, rejected or another
+  account's is refused with a `ValidationError` (422, `"The sender is invalid or is not approved."` in
+  `validation_errors["sender"]`) and nothing is sent or billed: leave `sender` out to use the default sender until
+  yours is approved. The sender IDs of the examples (`Calisero`, `YourApp`...) are placeholders, not senders you can
+  use.
 - `callback_url` must be an `http` or `https` address on the public Internet: private, loopback and link-local
   addresses are refused, and redirects are not followed.
+
+#### Approved Link Domains
+
+An account restricted to its approved link domains may link only to them. Every link in `body`, with or without
+`https://` (`www.example.ro`, `example.ro/path`), must go to a domain approved for the account, exactly, or as one of
+its subdomains when they were approved too; a link Calisero shortens is checked by the address it opens. Any other
+link is refused with a `ValidationError` (422) on the `body` field, its message naming the domain: the message is
+not created, not sent and not billed, test messages from the sandbox included. Ask for a domain in the dashboard,
+under Messages › Link domains.
+
+The field at fault tells a refused link from a refused sender:
+
+```python
+from calisero import ValidationError
+
+try:
+    client.messages.create(recipient=recipient, body="Your order has shipped: https://yourstore.ro/orders/1001")
+except ValidationError as error:
+    if "body" in error.validation_errors:
+        ...  # e.g. "Links to yourstore.ro are not allowed for this account: it is not one of its approved link domains."
+    elif "sender" in error.validation_errors:
+        ...  # "The sender is invalid or is not approved."
+    else:
+        raise
+```
+
+A scheduled message whose link domain is rejected or revoked before it is due is not sent nor billed: its status
+becomes `failed`, and its page in the dashboard shows the reason (error code 1005).
 
 #### Shorten URLs
 
 Set `shorten_urls=True` and Calisero replaces every `http://` and `https://` link of the body with a short one before
 sending, so the SMS gets shorter (and may take fewer parts). Each shortened link comes back with its click
-statistics:
+statistics. Test messages (a sandbox account or a sandbox API key) keep their links as written and come back with an
+empty `shortened_urls`:
 
 ```python
 message = client.messages.create(
@@ -423,11 +457,12 @@ The code is checked against the latest verification of the phone number, in any 
 ```python
 verification = client.verifications.validate(phone="+40742***350", code="ABC123").data
 
-print(verification.status)  # 'verified' (checking a verified code again succeeds)
+print(verification.status)  # 'verified'
 ```
 
-A wrong or expired code, or a sixth attempt, raises a `ValidationError` whose `validation_errors["code"]` says which;
-a phone number without a verification a `NotFoundError`.
+A wrong or expired code, a sixth attempt, or a code already used (a code validates only once) raises a
+`ValidationError` whose `validation_errors["code"]` says which; a phone number without a verification a
+`NotFoundError`.
 
 ### Opt-outs
 
@@ -759,13 +794,23 @@ Every request goes to `https://rest.calisero.ro/api/v1` with a 30-second timeout
 `Authorization: Bearer <key>`, `Accept: application/json`, `Content-Type: application/json` and the
 [`User-Agent`](#user-agent) below. Redirects are not followed, so the API key never goes to another host.
 
+### TLS
+
+The API accepts HTTPS connections with TLS 1.2 or TLS 1.3 only: since 1 November 2026, a client that offers only
+TLS 1.0 or 1.1 is refused during the TLS handshake, with no HTTP answer (a `TransportError`), and nothing is sent or
+billed. Python 3.10 and later offer TLS 1.2 and 1.3 by default, so the library needs nothing more; an `ssl_context` of
+your own must allow one of them.
+
+Keep the base URL on `https://`: the API redirects `http://` to `https://`, and the library follows no redirect, so a
+request to `http://` fails with an `ApiError` carrying the `3xx` status.
+
 ### User-Agent
 
 Every request names the library and its version, then the runtime, so Calisero can tell its requests apart and see
 which version sent them:
 
 ```
-User-Agent: Calisero-SMS-Python/1.0.1 (CPython 3.14.0; linux x86_64)
+User-Agent: Calisero-SMS-Python/1.0.2 (CPython 3.14.0; linux x86_64)
 ```
 
 A request whose `User-Agent` starts with `Calisero-SMS-Python/` comes from this library. Give your application's name
@@ -775,7 +820,7 @@ with `app_info` and it follows, so the requests of each of your applications can
 client = SmsClient.create(os.environ["CALISERO_API_KEY"], app_info=AppInfo("MyShop", "2.1.0"))
 
 print(client.http_client.user_agent)
-# Calisero-SMS-Python/1.0.1 (CPython 3.14.0; linux x86_64) MyShop/2.1.0
+# Calisero-SMS-Python/1.0.2 (CPython 3.14.0; linux x86_64) MyShop/2.1.0
 ```
 
 Characters a header does not allow (spaces, diacritics…) become `-` in the name and the version.

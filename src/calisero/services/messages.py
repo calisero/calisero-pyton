@@ -45,7 +45,8 @@ class MessageService:
 
         Args:
             recipient: the recipient's mobile number in international E.164 format, e.g. +40742123456
-            body: the text sent, at most 1600 characters
+            body: the text sent, at most 1600 characters. On an account restricted to its approved
+                link domains, every link in it (with or without https://) must go to one of them
             visible_body: what the API shows instead of `body` in its answers, its lists and the
                 dashboard, e.g. the text with a code masked: "Your code is ******"
             validity: the message's validity period, in hours
@@ -57,12 +58,16 @@ class MessageService:
             sender: one of the account's approved sender IDs, written exactly as approved (the match
                 is case-sensitive); the default sender when omitted
             shorten_urls: replace the http:// and https:// links of the body with short ones, whose
-                clicks are counted
+                clicks are counted. Test messages (a sandbox account or API key) keep their links
+                as written, and come back with no shortened URLs
             timeout: seconds to wait for the answer, instead of the client's
 
         Raises:
             DailyLimitExceededError: once the account's daily sending limit is reached
-            ValidationError: when the request is refused, e.g. an invalid or opted-out recipient
+            ValidationError: when the request is refused, e.g. an invalid or opted-out recipient, a
+                sender that is not approved for the account (on `validation_errors["sender"]`), or a
+                link to a domain that is not approved for it (on `validation_errors["body"]`, the
+                message naming the domain)
         """
         payload = create_message_payload(
             recipient=recipient,

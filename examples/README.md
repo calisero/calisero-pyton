@@ -45,6 +45,8 @@ examples/
    - `CALISERO_API_KEY`: your API key (a sandbox key sends no real message and costs nothing)
    - `CALISERO_TEST_PHONE`: the phone number to send to, in E.164 format (e.g. `+40742123456`)
    - `CALISERO_ACCOUNT_ID`: your account ID, for the account examples
+   - `CALISERO_SENDER`: optional, a sender ID approved for your account, written exactly as approved, for
+     `messages/send_advanced_sms.py`; without it the message goes out under the default sender
 
 3. **Run an example:**
    ```bash
